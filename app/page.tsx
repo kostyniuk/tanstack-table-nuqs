@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import {
   createColumnHelper,
   flexRender,
@@ -8,6 +8,7 @@ import {
   getSortedRowModel,
   SortingState,
   useReactTable,
+  Column,
 } from '@tanstack/react-table'
 import {
   Table,
@@ -17,63 +18,66 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ArrowUpDown } from 'lucide-react'
+import { ArrowUpDown, ArrowDown, ArrowUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { cn } from '@/lib/utils'
+import { parseAsSort } from './use-sorting-search-params'
+import { useQueryState } from 'nuqs'
 
-type Person = {
-  fullName: string
+type Payment = {
+  name: string
   status: string
-  progress: number
+  amount: number
 }
 
-const defaultData: Person[] = [
+const defaultData: Payment[] = [
   {
-    fullName: 'tanner linsley',
-    status: 'In Relationship',
-    progress: 50,
+    name: 'Invoice 1',
+    status: 'Paid',
+    amount: 25,
   },
   {
-    fullName: 'tandy miller',
-    status: 'Single',
-    progress: 80,
+    name: 'Invoice 2',
+    status: 'Pending',
+    amount: 10,
   },
   {
-    fullName: 'joe dirte',
-    status: 'Complicated',
-    progress: 10,
+    name: 'Invoice 3',
+    status: 'Failed',
+    amount: 25,
   },
 ]
 
-const columnHelper = createColumnHelper<Person>()
+const columnHelper = createColumnHelper<Payment>()
+
+const SortingHeader = ({ column }: { column: Column<Payment> }) => {
+  const isSorted = column.getIsSorted()
+  return (
+    <Button variant="ghost" onClick={() => {
+      column.toggleSorting(undefined, true)
+    }}>
+      {column.id}
+      {isSorted === "asc" ? <ArrowUp /> : isSorted === "desc" ? <ArrowDown /> : <ArrowUpDown />}
+    </Button>
+  )
+}
 
 const columns = [
-  columnHelper.accessor('fullName', {
-    header: 'Full Name',
+  columnHelper.accessor('name', {
     cell: (info) => <span>{info.getValue()}</span>,
+    header: SortingHeader,
   }),
-
   columnHelper.accessor('status', {
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Status
-          <ArrowUpDown />
-        </Button>
-      )
-    },
+    header: SortingHeader,
   }),
-  columnHelper.accessor('progress', {
-    header: 'Profile Progress',
+  columnHelper.accessor('amount', {
+    header: SortingHeader,
   }),
 ]
 
 export default function Page() {
   const [data, _setData] = React.useState(() => [...defaultData])
-  const [sorting, setSorting] = React.useState<SortingState>([])
-
+  const [sorting, setSorting] = useQueryState('sorting', parseAsSort.withDefault([]));
 
   console.log(sorting)
   const table = useReactTable({
@@ -133,14 +137,6 @@ export default function Page() {
             )}
           </TableBody>
         </Table>
-      </div>
-      <div className="mt-4">
-        <button
-          onClick={() => rerender()}
-          className="rounded-md border border-input bg-background px-4 py-2 text-sm font-medium shadow-sm transition-colors hover:bg-accent hover:text-accent-foreground"
-        >
-          Rerender
-        </button>
       </div>
     </div>
   )
